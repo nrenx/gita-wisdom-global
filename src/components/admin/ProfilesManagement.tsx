@@ -16,6 +16,11 @@ interface Profile {
   email?: string;
 }
 
+interface AuthUser {
+  id: string;
+  email?: string;
+}
+
 const ProfilesManagement = () => {
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(true);
@@ -43,7 +48,7 @@ const ProfilesManagement = () => {
 
       // Combine profile and user data
       const combinedData = profilesData?.map(profile => {
-        const userInfo = usersData?.users?.find(user => user.id === profile.id);
+        const userInfo = usersData?.users?.find((user: AuthUser) => user.id === profile.id);
         return {
           ...profile,
           email: userInfo?.email || 'N/A'
