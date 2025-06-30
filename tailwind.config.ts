@@ -1,3 +1,4 @@
+
 import type { Config } from "tailwindcss";
 
 export default {
@@ -61,7 +62,30 @@ export default {
 					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
+				},
+				// Sacred color palette
+				saffron: {
+					50: '#fff7ed',
+					100: '#ffedd5',
+					200: '#fed7aa',
+					300: '#fdba74',
+					400: '#fb923c',
+					500: '#f97316',
+					600: '#ea580c',
+					700: '#c2410c',
+					800: '#9a3412',
+					900: '#7c2d12',
+				},
+				sacred: {
+					gold: '#d4af37',
+					cream: '#fdf6e3',
+					lotus: '#f8e4ff',
+					divine: '#8b5cf6'
 				}
+			},
+			fontFamily: {
+				'cinzel': ['Cinzel', 'serif'],
+				'garamond': ['Cormorant Garamond', 'serif'],
 			},
 			borderRadius: {
 				lg: 'var(--radius)',
@@ -84,11 +108,39 @@ export default {
 					to: {
 						height: '0'
 					}
+				},
+				'lotus-bloom': {
+					'0%': {
+						transform: 'scale(0.8) rotate(-5deg)',
+						opacity: '0.8'
+					},
+					'50%': {
+						transform: 'scale(1.05) rotate(2deg)',
+						opacity: '1'
+					},
+					'100%': {
+						transform: 'scale(1) rotate(0deg)',
+						opacity: '1'
+					}
+				},
+				'sacred-glow': {
+					'0%, 100%': {
+						boxShadow: '0 0 5px rgba(212, 175, 55, 0.3)'
+					},
+					'50%': {
+						boxShadow: '0 0 20px rgba(212, 175, 55, 0.6), 0 0 30px rgba(212, 175, 55, 0.4)'
+					}
 				}
 			},
 			animation: {
 				'accordion-down': 'accordion-down 0.2s ease-out',
-				'accordion-up': 'accordion-up 0.2s ease-out'
+				'accordion-up': 'accordion-up 0.2s ease-out',
+				'lotus-bloom': 'lotus-bloom 1s ease-out',
+				'sacred-glow': 'sacred-glow 2s ease-in-out infinite'
+			},
+			backgroundImage: {
+				'sacred-gradient': 'linear-gradient(135deg, #fdf6e3 0%, #fff7ed 25%, #ffedd5 50%, #fed7aa 75%, #fdba74 100%)',
+				'divine-gradient': 'linear-gradient(135deg, #f8e4ff 0%, #e0e7ff 50%, #fdf6e3 100%)',
 			}
 		}
 	},
