@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Plus, Edit, Eye, EyeOff, Trash2 } from 'lucide-react';
+import { Plus, Edit, Eye, EyeOff, Trash2, BookOpen } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -17,7 +17,11 @@ interface Chapter {
   id: string;
   chapter_number: number;
   title: string;
-  description: string;
+  sanskrit_title?: string;
+  english_title?: string;
+  total_verses?: number;
+  summary?: string;
+  description?: string;
   visibility: 'published' | 'hidden' | 'draft';
   sort_order: number;
 }
@@ -55,6 +59,10 @@ const ChaptersManagement = () => {
       const chapterData = {
         chapter_number: parseInt(formData.get('chapter_number') as string),
         title: formData.get('title') as string,
+        sanskrit_title: formData.get('sanskrit_title') as string,
+        english_title: formData.get('english_title') as string,
+        total_verses: parseInt(formData.get('total_verses') as string) || null,
+        summary: formData.get('summary') as string,
         description: formData.get('description') as string,
         visibility: formData.get('visibility') as 'published' | 'hidden' | 'draft',
         sort_order: parseInt(formData.get('sort_order') as string) || 0,
@@ -135,11 +143,12 @@ const ChaptersManagement = () => {
       <CardHeader>
         <div className="flex items-center justify-between">
           <div>
-            <CardTitle className="text-2xl font-cinzel text-saffron-800">
+            <CardTitle className="text-2xl font-cinzel text-saffron-800 flex items-center gap-2">
+              <BookOpen className="h-6 w-6" />
               Chapters Management
             </CardTitle>
             <CardDescription>
-              Manage the 18 chapters of Bhagavad Gita
+              Manage the 18 chapters of Bhagavad Gita with complete metadata
             </CardDescription>
           </div>
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
@@ -155,7 +164,7 @@ const ChaptersManagement = () => {
                 Add Chapter
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-2xl">
+            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle className="font-cinzel text-saffron-800">
                   {editingChapter ? 'Edit Chapter' : 'Add New Chapter'}
@@ -166,9 +175,9 @@ const ChaptersManagement = () => {
                   e.preventDefault();
                   handleSave(new FormData(e.currentTarget));
                 }}
-                className="space-y-4"
+                className="space-y-6"
               >
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-3 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="chapter_number">Chapter Number</Label>
                     <Input
@@ -182,6 +191,17 @@ const ChaptersManagement = () => {
                     />
                   </div>
                   <div className="space-y-2">
+                    <Label htmlFor="total_verses">Total Verses</Label>
+                    <Input
+                      id="total_verses"
+                      name="total_verses"
+                      type="number"
+                      min="1"
+                      placeholder="e.g., 47"
+                      defaultValue={editingChapter?.total_verses || ''}
+                    />
+                  </div>
+                  <div className="space-y-2">
                     <Label htmlFor="sort_order">Sort Order</Label>
                     <Input
                       id="sort_order"
@@ -191,24 +211,60 @@ const ChaptersManagement = () => {
                     />
                   </div>
                 </div>
+
                 <div className="space-y-2">
-                  <Label htmlFor="title">Title</Label>
+                  <Label htmlFor="title">Chapter Title</Label>
                   <Input
                     id="title"
                     name="title"
                     required
+                    placeholder="e.g., Arjuna Vishada Yoga"
                     defaultValue={editingChapter?.title || ''}
                   />
                 </div>
+
                 <div className="space-y-2">
-                  <Label htmlFor="description">Description</Label>
+                  <Label htmlFor="sanskrit_title">Sanskrit Title</Label>
+                  <Input
+                    id="sanskrit_title"
+                    name="sanskrit_title"
+                    placeholder="e.g., अर्जुन विषाद योग"
+                    defaultValue={editingChapter?.sanskrit_title || ''}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="english_title">English Translation Title</Label>
+                  <Input
+                    id="english_title"
+                    name="english_title"
+                    placeholder="e.g., The Yoga of Arjuna's Dejection"
+                    defaultValue={editingChapter?.english_title || ''}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="summary">Summary/Overview</Label>
+                  <Textarea
+                    id="summary"
+                    name="summary"
+                    rows={4}
+                    placeholder="Enter a brief spiritual overview or context of this chapter..."
+                    defaultValue={editingChapter?.summary || ''}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="description">Detailed Description</Label>
                   <Textarea
                     id="description"
                     name="description"
-                    rows={3}
+                    rows={6}
+                    placeholder="Enter detailed description, key themes, and spiritual significance..."
                     defaultValue={editingChapter?.description || ''}
                   />
                 </div>
+
                 <div className="space-y-2">
                   <Label htmlFor="visibility">Visibility</Label>
                   <Select name="visibility" defaultValue={editingChapter?.visibility || 'published'}>
@@ -222,6 +278,7 @@ const ChaptersManagement = () => {
                     </SelectContent>
                   </Select>
                 </div>
+
                 <div className="flex justify-end space-x-2">
                   <Button
                     type="button"
@@ -245,7 +302,9 @@ const ChaptersManagement = () => {
             <TableRow>
               <TableHead>Chapter</TableHead>
               <TableHead>Title</TableHead>
-              <TableHead>Description</TableHead>
+              <TableHead>Sanskrit Title</TableHead>
+              <TableHead>English Title</TableHead>
+              <TableHead>Verses</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Actions</TableHead>
             </TableRow>
@@ -256,11 +315,19 @@ const ChaptersManagement = () => {
                 <TableCell className="font-medium">
                   {chapter.chapter_number}
                 </TableCell>
-                <TableCell className="font-garamond">
+                <TableCell className="font-garamond font-medium">
                   {chapter.title}
                 </TableCell>
+                <TableCell className="font-garamond">
+                  {chapter.sanskrit_title || '-'}
+                </TableCell>
                 <TableCell className="max-w-xs truncate">
-                  {chapter.description}
+                  {chapter.english_title || '-'}
+                </TableCell>
+                <TableCell>
+                  <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-sm">
+                    {chapter.total_verses || 'TBD'} verses
+                  </span>
                 </TableCell>
                 <TableCell>
                   <span
@@ -314,6 +381,71 @@ const ChaptersManagement = () => {
             ))}
           </TableBody>
         </Table>
+
+        {/* Detailed Chapter Cards */}
+        <div className="mt-8 space-y-4">
+          <h3 className="text-lg font-cinzel text-saffron-800 mb-4">Chapter Details</h3>
+          <div className="grid gap-4">
+            {chapters.map((chapter) => (
+              <Card key={chapter.id} className="border-sacred-gold/20">
+                <CardHeader>
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <CardTitle className="text-lg font-cinzel text-saffron-800">
+                        Chapter {chapter.chapter_number}: {chapter.title}
+                      </CardTitle>
+                      {chapter.sanskrit_title && (
+                        <p className="text-sm font-garamond text-gray-600 mt-1">
+                          Sanskrit: {chapter.sanskrit_title}
+                        </p>
+                      )}
+                      {chapter.english_title && (
+                        <p className="text-sm text-gray-600 mt-1">
+                          English: {chapter.english_title}
+                        </p>
+                      )}
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <span className="text-sm text-gray-500">
+                        {chapter.total_verses || 'TBD'} verses
+                      </span>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          setEditingChapter(chapter);
+                          setIsDialogOpen(true);
+                        }}
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                </CardHeader>
+                {(chapter.summary || chapter.description) && (
+                  <CardContent>
+                    {chapter.summary && (
+                      <div className="mb-4">
+                        <h4 className="font-medium text-saffron-800 mb-2">Summary</h4>
+                        <p className="text-sm text-gray-700 leading-relaxed">
+                          {chapter.summary}
+                        </p>
+                      </div>
+                    )}
+                    {chapter.description && (
+                      <div>
+                        <h4 className="font-medium text-saffron-800 mb-2">Description</h4>
+                        <p className="text-sm text-gray-700 leading-relaxed">
+                          {chapter.description}
+                        </p>
+                      </div>
+                    )}
+                  </CardContent>
+                )}
+              </Card>
+            ))}
+          </div>
+        </div>
       </CardContent>
     </Card>
   );

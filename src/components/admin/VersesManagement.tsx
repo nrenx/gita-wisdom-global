@@ -9,7 +9,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Plus, Edit, Eye, EyeOff, Trash2, Filter, Search } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Plus, Edit, Eye, EyeOff, Trash2, Filter, Search, BookOpen } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -18,29 +19,39 @@ interface Verse {
   chapter_id: string;
   language_id: string;
   verse_number: number;
-  youtube_url: string;
-  video_file_path: string;
-  title: string;
-  description: string;
-  keywords: string[];
+  sanskrit_text?: string;
+  transliteration?: string;
+  english_translation?: string;
+  youtube_url?: string;
+  video_file_path?: string;
+  title?: string;
+  description?: string;
+  commentary?: string;
+  keywords?: string[];
   status: 'pending' | 'uploaded' | 'processing' | 'published';
   visibility: 'published' | 'hidden' | 'draft';
   is_daily_verse: boolean;
-  whatsapp_share_text: string;
-  chapters: { title: string; chapter_number: number };
-  languages: { name: string; native_name: string };
+  whatsapp_share_text?: string;
+  chapters?: { title: string; chapter_number: number; sanskrit_title?: string };
+  languages?: { name: string; native_name: string };
 }
 
 interface Chapter {
   id: string;
   chapter_number: number;
   title: string;
+  sanskrit_title?: string;
+  english_title?: string;
+  total_verses?: number;
+  summary?: string;
 }
 
 interface Language {
   id: string;
   name: string;
   native_name: string;
+  verse_count?: number;
+  chapter_count?: number;
 }
 
 const VersesManagement = () => {
@@ -54,6 +65,8 @@ const VersesManagement = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterChapter, setFilterChapter] = useState<string>('');
   const [filterLanguage, setFilterLanguage] = useState<string>('');
+  const [filterStatus, setFilterStatus] = useState<string>('');
+  const [activeTab, setActiveTab] = useState('all');
 
   useEffect(() => {
     fetchData();
@@ -66,19 +79,19 @@ const VersesManagement = () => {
           .from('verses')
           .select(`
             *,
-            chapters (title, chapter_number),
+            chapters (title, chapter_number, sanskrit_title, english_title, total_verses, summary),
             languages (name, native_name)
           `)
           .order('created_at', { ascending: false }),
         
         supabase
           .from('chapters')
-          .select('id, chapter_number, title')
+          .select('*')
           .order('chapter_number'),
         
         supabase
           .from('languages')
-          .select('id, name, native_name')
+          .select('*')
           .eq('is_active', true)
           .order('name')
       ]);
@@ -109,9 +122,13 @@ const VersesManagement = () => {
         chapter_id: formData.get('chapter_id') as string,
         language_id: formData.get('language_id') as string,
         verse_number: parseInt(formData.get('verse_number') as string),
+        sanskrit_text: formData.get('sanskrit_text') as string,
+        transliteration: formData.get('transliteration') as string,
+        english_translation: formData.get('english_translation') as string,
         youtube_url: formData.get('youtube_url') as string,
         title: formData.get('title') as string,
         description: formData.get('description') as string,
+        commentary: formData.get('commentary') as string,
         keywords,
         status: formData.get('status') as 'pending' | 'uploaded' | 'processing' | 'published',
         visibility: formData.get('visibility') as 'published' | 'hidden' | 'draft',
@@ -167,13 +184,25 @@ const VersesManagement = () => {
     const matchesSearch = !searchTerm || 
       verse.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       verse.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      verse.sanskrit_text?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      verse.english_translation?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       verse.verse_number.toString().includes(searchTerm);
     
     const matchesChapter = !filterChapter || verse.chapter_id === filterChapter;
     const matchesLanguage = !filterLanguage || verse.language_id === filterLanguage;
+    const matchesStatus = !filterStatus || verse.status === filterStatus;
     
-    return matchesSearch && matchesChapter && matchesLanguage;
+    return matchesSearch && matchesChapter && matchesLanguage && matchesStatus;
   });
+
+  const groupedVerses = filteredVerses.reduce((acc, verse) => {
+    const chapterNum = verse.chapters?.chapter_number || 0;
+    if (!acc[chapterNum]) {
+      acc[chapterNum] = [];
+    }
+    acc[chapterNum].push(verse);
+    return acc;
+  }, {} as Record<number, Verse[]>);
 
   if (loading) {
     return (
@@ -188,11 +217,12 @@ const VersesManagement = () => {
       <CardHeader>
         <div className="flex items-center justify-between">
           <div>
-            <CardTitle className="text-2xl font-cinzel text-saffron-800">
+            <CardTitle className="text-2xl font-cinzel text-saffron-800 flex items-center gap-2">
+              <BookOpen className="h-6 w-6" />
               Verses Management
             </CardTitle>
             <CardDescription>
-              Manage video content for each verse by chapter and language
+              Manage all 700 verses of the Bhagavad Gita with translations and commentary
             </CardDescription>
           </div>
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
@@ -275,6 +305,50 @@ const VersesManagement = () => {
                 </div>
 
                 <div className="space-y-2">
+                  <Label htmlFor="sanskrit_text">Sanskrit Text</Label>
+                  <Textarea
+                    id="sanskrit_text"
+                    name="sanskrit_text"
+                    rows={3}
+                    placeholder="Enter original Sanskrit verse..."
+                    defaultValue={editingVerse?.sanskrit_text || ''}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="transliteration">Transliteration</Label>
+                  <Textarea
+                    id="transliteration"
+                    name="transliteration"
+                    rows={2}
+                    placeholder="Enter romanized transliteration..."
+                    defaultValue={editingVerse?.transliteration || ''}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="english_translation">English Translation</Label>
+                  <Textarea
+                    id="english_translation"
+                    name="english_translation"
+                    rows={3}
+                    placeholder="Enter English translation..."
+                    defaultValue={editingVerse?.english_translation || ''}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="commentary">Commentary</Label>
+                  <Textarea
+                    id="commentary"
+                    name="commentary"
+                    rows={4}
+                    placeholder="Enter detailed commentary or explanation..."
+                    defaultValue={editingVerse?.commentary || ''}
+                  />
+                </div>
+
+                <div className="space-y-2">
                   <Label htmlFor="youtube_url">YouTube URL</Label>
                   <Input
                     id="youtube_url"
@@ -290,7 +364,7 @@ const VersesManagement = () => {
                   <Textarea
                     id="description"
                     name="description"
-                    rows={3}
+                    rows={2}
                     defaultValue={editingVerse?.description || ''}
                   />
                 </div>
@@ -412,95 +486,206 @@ const VersesManagement = () => {
               ))}
             </SelectContent>
           </Select>
+          <Select value={filterStatus} onValueChange={setFilterStatus}>
+            <SelectTrigger className="w-48">
+              <SelectValue placeholder="Filter by status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="">All Status</SelectItem>
+              <SelectItem value="pending">Pending</SelectItem>
+              <SelectItem value="uploaded">Uploaded</SelectItem>
+              <SelectItem value="processing">Processing</SelectItem>
+              <SelectItem value="published">Published</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
 
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Chapter</TableHead>
-              <TableHead>Verse</TableHead>
-              <TableHead>Language</TableHead>
-              <TableHead>Title</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Visibility</TableHead>
-              <TableHead>Daily</TableHead>
-              <TableHead>Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filteredVerses.map((verse) => (
-              <TableRow key={verse.id}>
-                <TableCell>
-                  {verse.chapters?.chapter_number}. {verse.chapters?.title}
-                </TableCell>
-                <TableCell className="font-medium">
-                  {verse.verse_number}
-                </TableCell>
-                <TableCell>
-                  {verse.languages?.name}
-                </TableCell>
-                <TableCell className="font-garamond max-w-xs truncate">
-                  {verse.title || 'Untitled'}
-                </TableCell>
-                <TableCell>
-                  <span
-                    className={`px-2 py-1 rounded text-xs font-medium ${
-                      verse.status === 'published'
-                        ? 'bg-green-100 text-green-800'
-                        : verse.status === 'processing'
-                        ? 'bg-blue-100 text-blue-800'
-                        : verse.status === 'uploaded'
-                        ? 'bg-yellow-100 text-yellow-800'
-                        : 'bg-gray-100 text-gray-800'
-                    }`}
-                  >
-                    {verse.status}
-                  </span>
-                </TableCell>
-                <TableCell>
-                  <span
-                    className={`px-2 py-1 rounded text-xs font-medium ${
-                      verse.visibility === 'published'
-                        ? 'bg-green-100 text-green-800'
-                        : verse.visibility === 'hidden'
-                        ? 'bg-yellow-100 text-yellow-800'
-                        : 'bg-gray-100 text-gray-800'
-                    }`}
-                  >
-                    {verse.visibility}
-                  </span>
-                </TableCell>
-                <TableCell>
-                  {verse.is_daily_verse ? '⭐' : ''}
-                </TableCell>
-                <TableCell>
-                  <div className="flex items-center space-x-2">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => {
-                        setEditingVerse(verse);
-                        setIsDialogOpen(true);
-                      }}
-                    >
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                    {isAdmin && (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => handleDelete(verse.id)}
-                        className="text-red-600 hover:text-red-800"
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="all">All Verses</TabsTrigger>
+            <TabsTrigger value="grouped">By Chapter</TabsTrigger>
+            <TabsTrigger value="stats">Statistics</TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="all">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Chapter</TableHead>
+                  <TableHead>Verse</TableHead>
+                  <TableHead>Language</TableHead>
+                  <TableHead>Title</TableHead>
+                  <TableHead>Sanskrit</TableHead>
+                  <TableHead>Translation</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredVerses.map((verse) => (
+                  <TableRow key={verse.id}>
+                    <TableCell>
+                      {verse.chapters?.chapter_number}
+                    </TableCell>
+                    <TableCell className="font-medium">
+                      {verse.verse_number}
+                    </TableCell>
+                    <TableCell>
+                      {verse.languages?.name}
+                    </TableCell>
+                    <TableCell className="font-garamond max-w-xs truncate">
+                      {verse.title || 'Untitled'}
+                    </TableCell>
+                    <TableCell className="max-w-xs truncate font-garamond">
+                      {verse.sanskrit_text || '-'}
+                    </TableCell>
+                    <TableCell className="max-w-xs truncate">
+                      {verse.english_translation || '-'}
+                    </TableCell>
+                    <TableCell>
+                      <span
+                        className={`px-2 py-1 rounded text-xs font-medium ${
+                          verse.status === 'published'
+                            ? 'bg-green-100 text-green-800'
+                            : verse.status === 'processing'
+                            ? 'bg-blue-100 text-blue-800'
+                            : verse.status === 'uploaded'
+                            ? 'bg-yellow-100 text-yellow-800'
+                            : 'bg-gray-100 text-gray-800'
+                        }`}
                       >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    )}
+                        {verse.status}
+                      </span>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center space-x-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            setEditingVerse(verse);
+                            setIsDialogOpen(true);
+                          }}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        {isAdmin && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleDelete(verse.id)}
+                            className="text-red-600 hover:text-red-800"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TabsContent>
+
+          <TabsContent value="grouped">
+            <div className="space-y-6">
+              {Object.entries(groupedVerses)
+                .sort(([a], [b]) => parseInt(a) - parseInt(b))
+                .map(([chapterNum, chapterVerses]) => (
+                  <Card key={chapterNum} className="border-sacred-gold/20">
+                    <CardHeader>
+                      <CardTitle className="text-lg font-cinzel text-saffron-800">
+                        Chapter {chapterNum} - {chapterVerses[0]?.chapters?.title}
+                      </CardTitle>
+                      <CardDescription>
+                        {chapterVerses.length} verses
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="grid gap-4">
+                        {chapterVerses
+                          .sort((a, b) => a.verse_number - b.verse_number)
+                          .map((verse) => (
+                            <div
+                              key={verse.id}
+                              className="flex justify-between items-center p-3 bg-white/50 rounded-lg border"
+                            >
+                              <div className="flex-1">
+                                <div className="font-medium">
+                                  Verse {verse.verse_number} - {verse.title || 'Untitled'}
+                                </div>
+                                <div className="text-sm text-gray-600 truncate">
+                                  {verse.english_translation || 'No translation'}
+                                </div>
+                              </div>
+                              <div className="flex items-center space-x-2">
+                                <span
+                                  className={`px-2 py-1 rounded text-xs ${
+                                    verse.status === 'published'
+                                      ? 'bg-green-100 text-green-800'
+                                      : 'bg-gray-100 text-gray-800'
+                                  }`}
+                                >
+                                  {verse.status}
+                                </span>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => {
+                                    setEditingVerse(verse);
+                                    setIsDialogOpen(true);
+                                  }}
+                                >
+                                  <Edit className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </div>
+                          ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+            </div>
+          </TabsContent>
+
+          <TabsContent value="stats">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Total Verses</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-bold text-saffron-800">
+                    {verses.length}
                   </div>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+                  <p className="text-sm text-gray-600">of 700 verses</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader>
+                  <CardTitle>Published Verses</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-bold text-green-600">
+                    {verses.filter(v => v.status === 'published').length}
+                  </div>
+                  <p className="text-sm text-gray-600">ready for public</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader>
+                  <CardTitle>Chapters Covered</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-bold text-blue-600">
+                    {Object.keys(groupedVerses).length}
+                  </div>
+                  <p className="text-sm text-gray-600">of 18 chapters</p>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+        </Tabs>
         
         {filteredVerses.length === 0 && (
           <div className="text-center py-8 text-gray-500">

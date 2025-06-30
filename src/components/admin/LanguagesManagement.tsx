@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Plus, Edit, Trash2, Eye, EyeOff } from 'lucide-react';
+import { Plus, Edit, Trash2, Eye, EyeOff, Globe } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -18,6 +18,9 @@ interface Language {
   native_name: string;
   is_active: boolean;
   verse_count?: number;
+  chapter_count?: number;
+  manual_verse_count?: number;
+  manual_chapter_count?: number;
 }
 
 const LanguagesManagement = () => {
@@ -26,6 +29,7 @@ const LanguagesManagement = () => {
   const [loading, setLoading] = useState(true);
   const [editingLanguage, setEditingLanguage] = useState<Language | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [editingCounts, setEditingCounts] = useState<{ [key: string]: { verses: number; chapters: number } }>({});
 
   useEffect(() => {
     fetchLanguages();
@@ -37,17 +41,27 @@ const LanguagesManagement = () => {
         .from('languages')
         .select(`
           *,
-          verse_count:verses(count)
+          verse_count:verses(count),
+          chapter_count:verses(chapter_id)
         `)
         .order('name');
 
       if (error) throw error;
       
-      // Process the data to get verse counts
-      const processedData = data?.map(lang => ({
-        ...lang,
-        verse_count: lang.verse_count?.[0]?.count || 0
-      })) || [];
+      // Process the data to get verse counts and unique chapter counts
+      const processedData = data?.map(lang => {
+        const actualVerseCount = lang.verse_count?.[0]?.count || 0;
+        const uniqueChapters = new Set(lang.chapter_count?.map((v: any) => v.chapter_id) || []);
+        const actualChapterCount = uniqueChapters.size;
+        
+        return {
+          ...lang,
+          verse_count: actualVerseCount,
+          chapter_count: actualChapterCount,
+          manual_verse_count: lang.manual_verse_count || actualVerseCount,
+          manual_chapter_count: lang.manual_chapter_count || actualChapterCount
+        };
+      }) || [];
       
       setLanguages(processedData);
     } catch (error) {
@@ -65,6 +79,8 @@ const LanguagesManagement = () => {
         code: formData.get('code') as string,
         native_name: formData.get('native_name') as string,
         is_active: formData.get('is_active') === 'on',
+        manual_verse_count: parseInt(formData.get('manual_verse_count') as string) || 0,
+        manual_chapter_count: parseInt(formData.get('manual_chapter_count') as string) || 0,
       };
 
       if (editingLanguage) {
@@ -127,6 +143,50 @@ const LanguagesManagement = () => {
     }
   };
 
+  const updateCounts = async (languageId: string, verses: number, chapters: number) => {
+    try {
+      const { error } = await supabase
+        .from('languages')
+        .update({
+          manual_verse_count: verses,
+          manual_chapter_count: chapters
+        })
+        .eq('id', languageId);
+
+      if (error) throw error;
+      toast.success('Counts updated successfully');
+      fetchLanguages();
+      
+      // Clear editing state for this language
+      setEditingCounts(prev => {
+        const newState = { ...prev };
+        delete newState[languageId];
+        return newState;
+      });
+    } catch (error: any) {
+      console.error('Error updating counts:', error);
+      toast.error(error.message || 'Failed to update counts');
+    }
+  };
+
+  const startEditingCounts = (language: Language) => {
+    setEditingCounts(prev => ({
+      ...prev,
+      [language.id]: {
+        verses: language.manual_verse_count || 0,
+        chapters: language.manual_chapter_count || 0
+      }
+    }));
+  };
+
+  const cancelEditingCounts = (languageId: string) => {
+    setEditingCounts(prev => {
+      const newState = { ...prev };
+      delete newState[languageId];
+      return newState;
+    });
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -140,11 +200,12 @@ const LanguagesManagement = () => {
       <CardHeader>
         <div className="flex items-center justify-between">
           <div>
-            <CardTitle className="text-2xl font-cinzel text-saffron-800">
+            <CardTitle className="text-2xl font-cinzel text-saffron-800 flex items-center gap-2">
+              <Globe className="h-6 w-6" />
               Languages Management
             </CardTitle>
             <CardDescription>
-              Manage available languages for verse translations
+              Manage available languages and track translation progress
             </CardDescription>
           </div>
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
@@ -205,6 +266,32 @@ const LanguagesManagement = () => {
                     defaultValue={editingLanguage?.native_name || ''}
                   />
                 </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="manual_verse_count">Verses Uploaded</Label>
+                    <Input
+                      id="manual_verse_count"
+                      name="manual_verse_count"
+                      type="number"
+                      min="0"
+                      max="700"
+                      placeholder="0"
+                      defaultValue={editingLanguage?.manual_verse_count || 0}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="manual_chapter_count">Chapters Completed</Label>
+                    <Input
+                      id="manual_chapter_count"
+                      name="manual_chapter_count"
+                      type="number"
+                      min="0"
+                      max="18"
+                      placeholder="0"
+                      defaultValue={editingLanguage?.manual_chapter_count || 0}
+                    />
+                  </div>
+                </div>
                 <div className="flex items-center space-x-2">
                   <input
                     type="checkbox"
@@ -239,7 +326,9 @@ const LanguagesManagement = () => {
               <TableHead>Language</TableHead>
               <TableHead>Native Name</TableHead>
               <TableHead>Code</TableHead>
-              <TableHead>Verses Count</TableHead>
+              <TableHead>Verses Uploaded</TableHead>
+              <TableHead>Chapters Completed</TableHead>
+              <TableHead>Progress</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Actions</TableHead>
             </TableRow>
@@ -257,9 +346,103 @@ const LanguagesManagement = () => {
                   {language.code}
                 </TableCell>
                 <TableCell>
-                  <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-sm">
-                    {language.verse_count || 0} verses
-                  </span>
+                  {editingCounts[language.id] ? (
+                    <div className="flex items-center space-x-2">
+                      <Input
+                        type="number"
+                        min="0"
+                        max="700"
+                        value={editingCounts[language.id].verses}
+                        onChange={(e) => setEditingCounts(prev => ({
+                          ...prev,
+                          [language.id]: {
+                            ...prev[language.id],
+                            verses: parseInt(e.target.value) || 0
+                          }
+                        }))}
+                        className="w-20"
+                      />
+                      <Button
+                        size="sm"
+                        onClick={() => updateCounts(
+                          language.id,
+                          editingCounts[language.id].verses,
+                          editingCounts[language.id].chapters
+                        )}
+                        className="bg-green-600 hover:bg-green-700"
+                      >
+                        Save
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => cancelEditingCounts(language.id)}
+                      >
+                        Cancel
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center space-x-2">
+                      <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-sm">
+                        {language.manual_verse_count || 0} / 700
+                      </span>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => startEditingCounts(language)}
+                      >
+                        <Edit className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  )}
+                </TableCell>
+                <TableCell>
+                  {editingCounts[language.id] ? (
+                    <Input
+                      type="number"
+                      min="0"
+                      max="18"
+                      value={editingCounts[language.id].chapters}
+                      onChange={(e) => setEditingCounts(prev => ({
+                        ...prev,
+                        [language.id]: {
+                          ...prev[language.id],
+                          chapters: parseInt(e.target.value) || 0
+                        }
+                      }))}
+                      className="w-20"
+                    />
+                  ) : (
+                    <span className="bg-purple-100 text-purple-800 px-2 py-1 rounded text-sm">
+                      {language.manual_chapter_count || 0} / 18
+                    </span>
+                  )}
+                </TableCell>
+                <TableCell>
+                  <div className="flex flex-col space-y-1">
+                    <div className="flex items-center space-x-2">
+                      <div className="w-16 bg-gray-200 rounded-full h-2">
+                        <div 
+                          className="bg-blue-600 h-2 rounded-full" 
+                          style={{ width: `${Math.min(((language.manual_verse_count || 0) / 700) * 100, 100)}%` }}
+                        ></div>
+                      </div>
+                      <span className="text-xs text-gray-600">
+                        {Math.round(((language.manual_verse_count || 0) / 700) * 100)}%
+                      </span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <div className="w-16 bg-gray-200 rounded-full h-2">
+                        <div 
+                          className="bg-purple-600 h-2 rounded-full" 
+                          style={{ width: `${Math.min(((language.manual_chapter_count || 0) / 18) * 100, 100)}%` }}
+                        ></div>
+                      </div>
+                      <span className="text-xs text-gray-600">
+                        {Math.round(((language.manual_chapter_count || 0) / 18) * 100)}%
+                      </span>
+                    </div>
+                  </div>
                 </TableCell>
                 <TableCell>
                   <span
