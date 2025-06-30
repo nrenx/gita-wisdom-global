@@ -9,16 +9,186 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      chapters: {
+        Row: {
+          chapter_number: number
+          created_at: string | null
+          description: string | null
+          id: string
+          sort_order: number | null
+          title: string
+          updated_at: string | null
+          visibility: Database["public"]["Enums"]["visibility_status"] | null
+        }
+        Insert: {
+          chapter_number: number
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          sort_order?: number | null
+          title: string
+          updated_at?: string | null
+          visibility?: Database["public"]["Enums"]["visibility_status"] | null
+        }
+        Update: {
+          chapter_number?: number
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          sort_order?: number | null
+          title?: string
+          updated_at?: string | null
+          visibility?: Database["public"]["Enums"]["visibility_status"] | null
+        }
+        Relationships: []
+      }
+      languages: {
+        Row: {
+          code: string
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          native_name: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          code: string
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          native_name?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          code?: string
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          native_name?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string | null
+          full_name: string | null
+          id: string
+          role: Database["public"]["Enums"]["user_role"] | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          full_name?: string | null
+          id: string
+          role?: Database["public"]["Enums"]["user_role"] | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          full_name?: string | null
+          id?: string
+          role?: Database["public"]["Enums"]["user_role"] | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      verses: {
+        Row: {
+          chapter_id: string
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          id: string
+          is_daily_verse: boolean | null
+          keywords: string[] | null
+          language_id: string
+          status: Database["public"]["Enums"]["verse_status"] | null
+          title: string | null
+          updated_at: string | null
+          verse_number: number
+          video_file_path: string | null
+          visibility: Database["public"]["Enums"]["visibility_status"] | null
+          whatsapp_share_text: string | null
+          youtube_url: string | null
+        }
+        Insert: {
+          chapter_id: string
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_daily_verse?: boolean | null
+          keywords?: string[] | null
+          language_id: string
+          status?: Database["public"]["Enums"]["verse_status"] | null
+          title?: string | null
+          updated_at?: string | null
+          verse_number: number
+          video_file_path?: string | null
+          visibility?: Database["public"]["Enums"]["visibility_status"] | null
+          whatsapp_share_text?: string | null
+          youtube_url?: string | null
+        }
+        Update: {
+          chapter_id?: string
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_daily_verse?: boolean | null
+          keywords?: string[] | null
+          language_id?: string
+          status?: Database["public"]["Enums"]["verse_status"] | null
+          title?: string | null
+          updated_at?: string | null
+          verse_number?: number
+          video_file_path?: string | null
+          visibility?: Database["public"]["Enums"]["visibility_status"] | null
+          whatsapp_share_text?: string | null
+          youtube_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "verses_chapter_id_fkey"
+            columns: ["chapter_id"]
+            isOneToOne: false
+            referencedRelation: "chapters"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "verses_language_id_fkey"
+            columns: ["language_id"]
+            isOneToOne: false
+            referencedRelation: "languages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      can_edit: {
+        Args: { _user_id: string }
+        Returns: boolean
+      }
+      has_role: {
+        Args: {
+          _user_id: string
+          _role: Database["public"]["Enums"]["user_role"]
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      user_role: "admin" | "editor" | "viewer"
+      verse_status: "pending" | "uploaded" | "processing" | "published"
+      visibility_status: "published" | "hidden" | "draft"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -133,6 +303,10 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      user_role: ["admin", "editor", "viewer"],
+      verse_status: ["pending", "uploaded", "processing", "published"],
+      visibility_status: ["published", "hidden", "draft"],
+    },
   },
 } as const
