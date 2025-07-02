@@ -3,9 +3,48 @@ import { Link } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { BookOpen, ArrowRight } from "lucide-react";
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
+
+interface Chapter {
+  id: string;
+  chapter_number: number;
+  title: string;
+  sanskrit_title?: string;
+  english_title?: string;
+  total_verses?: number;
+  summary?: string;
+  description?: string;
+  visibility: string;
+}
 
 const Chapters = () => {
-  const chapters = [
+  const [chapters, setChapters] = useState<Chapter[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchChapters();
+  }, []);
+
+  const fetchChapters = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('chapters')
+        .select('*')
+        .eq('visibility', 'published')
+        .order('chapter_number');
+
+      if (error) throw error;
+      setChapters(data || []);
+    } catch (error) {
+      console.error('Error fetching chapters:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Fallback data for display purposes (will be populated from database)
+  const defaultChapters = [
     {
       number: 1,
       title: "Arjuna Vishada Yoga",
@@ -152,6 +191,20 @@ const Chapters = () => {
     }
   ];
 
+  const displayChapters = chapters.length > 0 ? chapters : defaultChapters;
+
+  if (loading) {
+    return (
+      <div className="min-h-screen py-12 px-4">
+        <div className="container mx-auto">
+          <div className="flex items-center justify-center h-64">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-saffron-600"></div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen py-12 px-4">
       <div className="container mx-auto">
@@ -171,43 +224,56 @@ const Chapters = () => {
 
         {/* Chapters Grid */}
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {chapters.map((chapter) => (
-            <Card key={chapter.number} className="chapter-card lotus-pattern group">
-              <CardContent className="p-6">
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex items-center space-x-3">
-                    <div className="w-12 h-12 bg-gradient-to-br from-saffron-500 to-saffron-600 rounded-full flex items-center justify-center text-white font-cinzel font-bold shadow-lg">
-                      {chapter.number}
+          {displayChapters.map((chapter) => {
+            const chapterNumber = 'chapter_number' in chapter ? chapter.chapter_number : chapter.number;
+            const chapterTitle = 'title' in chapter ? chapter.title : chapter.title;
+            const englishTitle = 'english_title' in chapter ? chapter.english_title : chapter.englishTitle;
+            const verses = 'total_verses' in chapter ? chapter.total_verses : chapter.verses;
+            const description = 'description' in chapter ? chapter.description : chapter.description;
+            const theme = 'theme' in chapter ? chapter.theme : null;
+            
+            return (
+              <Card key={chapterNumber} className="chapter-card lotus-pattern group">
+                <CardContent className="p-6">
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-12 h-12 bg-gradient-to-br from-saffron-500 to-saffron-600 rounded-full flex items-center justify-center text-white font-cinzel font-bold shadow-lg">
+                        {chapterNumber}
+                      </div>
+                      <div>
+                        <span className="text-sm text-saffron-600 font-medium">Chapter {chapterNumber}</span>
+                        <div className="text-xs text-gray-500">{verses || 0} verses</div>
+                      </div>
                     </div>
-                    <div>
-                      <span className="text-sm text-saffron-600 font-medium">Chapter {chapter.number}</span>
-                      <div className="text-xs text-gray-500">{chapter.verses} verses</div>
-                    </div>
+                    {theme && (
+                      <span className="language-tag text-xs">
+                        {theme}
+                      </span>
+                    )}
                   </div>
-                  <span className="language-tag text-xs">
-                    {chapter.theme}
-                  </span>
-                </div>
 
-                <h3 className="text-lg font-cinzel font-semibold mb-2 text-gray-800 line-clamp-2">
-                  {chapter.title}
-                </h3>
-                <p className="text-sm text-saffron-700 font-medium mb-3 italic">
-                  {chapter.englishTitle}
-                </p>
-                <p className="text-gray-600 text-sm leading-relaxed mb-6 font-garamond">
-                  {chapter.description}
-                </p>
+                  <h3 className="text-lg font-cinzel font-semibold mb-2 text-gray-800 line-clamp-2">
+                    {chapterTitle}
+                  </h3>
+                  {englishTitle && (
+                    <p className="text-sm text-saffron-700 font-medium mb-3 italic">
+                      {englishTitle}
+                    </p>
+                  )}
+                  <p className="text-gray-600 text-sm leading-relaxed mb-6 font-garamond">
+                    {description}
+                  </p>
 
-                <Link to={`/chapter/${chapter.number}`}>
-                  <Button className="w-full sacred-button group-hover:shadow-lg transition-all duration-300">
-                    <span>Explore Chapter</span>
-                    <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
-                  </Button>
-                </Link>
-              </CardContent>
-            </Card>
-          ))}
+                  <Link to={`/chapter/${chapterNumber}`}>
+                    <Button className="w-full sacred-button group-hover:shadow-lg transition-all duration-300">
+                      <span>Explore Chapter</span>
+                      <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
+                    </Button>
+                  </Link>
+                </CardContent>
+              </Card>
+            );
+          })}
         </div>
 
         {/* Call to Action */}
