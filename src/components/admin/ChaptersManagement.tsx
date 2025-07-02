@@ -154,10 +154,7 @@ const ChaptersManagement = () => {
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
               <Button
-                onClick={() => {
-                  setEditingChapter(null);
-                  setIsDialogOpen(true);
-                }}
+                onClick={() => window.location.href = '/admin/chapter'}
                 className="bg-saffron-600 hover:bg-saffron-700"
               >
                 <Plus className="h-4 w-4 mr-2" />
@@ -358,10 +355,7 @@ const ChaptersManagement = () => {
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={() => {
-                        setEditingChapter(chapter);
-                        setIsDialogOpen(true);
-                      }}
+                      onClick={() => window.location.href = `/admin/chapter/${chapter.id}`}
                     >
                       <Edit className="h-4 w-4" />
                     </Button>

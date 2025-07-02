@@ -228,10 +228,7 @@ const VersesManagement = () => {
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
               <Button
-                onClick={() => {
-                  setEditingVerse(null);
-                  setIsDialogOpen(true);
-                }}
+                onClick={() => window.location.href = '/admin/verse'}
                 className="bg-saffron-600 hover:bg-saffron-700"
               >
                 <Plus className="h-4 w-4 mr-2" />
@@ -562,10 +559,7 @@ const VersesManagement = () => {
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={() => {
-                            setEditingVerse(verse);
-                            setIsDialogOpen(true);
-                          }}
+                          onClick={() => window.location.href = `/admin/verse/${verse.id}`}
                         >
                           <Edit className="h-4 w-4" />
                         </Button>
@@ -631,10 +625,7 @@ const VersesManagement = () => {
                                 <Button
                                   size="sm"
                                   variant="outline"
-                                  onClick={() => {
-                                    setEditingVerse(verse);
-                                    setIsDialogOpen(true);
-                                  }}
+                                  onClick={() => window.location.href = `/admin/verse/${verse.id}`}
                                 >
                                   <Edit className="h-4 w-4" />
                                 </Button>

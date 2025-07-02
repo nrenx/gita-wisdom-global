@@ -14,6 +14,8 @@ import Donation from "./pages/Donation";
 import Contact from "./pages/Contact";
 import Auth from "./pages/Auth";
 import Admin from "./pages/Admin";
+import EditVerse from "./pages/admin/EditVerse";
+import EditChapter from "./pages/admin/EditChapter";
 import NotFound from "./pages/NotFound";
 import Layout from "./components/Layout";
 
@@ -39,6 +41,8 @@ const App = () => (
             {/* Auth routes (no layout) */}
             <Route path="/auth" element={<Auth />} />
             <Route path="/admin" element={<Admin />} />
+            <Route path="/admin/verse/:id?" element={<EditVerse />} />
+            <Route path="/admin/chapter/:id?" element={<EditChapter />} />
             
             {/* 404 page */}
             <Route path="*" element={<Layout><NotFound /></Layout>} />

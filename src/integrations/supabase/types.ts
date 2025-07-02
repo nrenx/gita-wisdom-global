@@ -14,9 +14,13 @@ export type Database = {
           chapter_number: number
           created_at: string | null
           description: string | null
+          english_title: string | null
           id: string
+          sanskrit_title: string | null
           sort_order: number | null
+          summary: string | null
           title: string
+          total_verses: number | null
           updated_at: string | null
           visibility: Database["public"]["Enums"]["visibility_status"] | null
         }
@@ -24,9 +28,13 @@ export type Database = {
           chapter_number: number
           created_at?: string | null
           description?: string | null
+          english_title?: string | null
           id?: string
+          sanskrit_title?: string | null
           sort_order?: number | null
+          summary?: string | null
           title: string
+          total_verses?: number | null
           updated_at?: string | null
           visibility?: Database["public"]["Enums"]["visibility_status"] | null
         }
@@ -34,9 +42,13 @@ export type Database = {
           chapter_number?: number
           created_at?: string | null
           description?: string | null
+          english_title?: string | null
           id?: string
+          sanskrit_title?: string | null
           sort_order?: number | null
+          summary?: string | null
           title?: string
+          total_verses?: number | null
           updated_at?: string | null
           visibility?: Database["public"]["Enums"]["visibility_status"] | null
         }
@@ -105,15 +117,19 @@ export type Database = {
       verses: {
         Row: {
           chapter_id: string
+          commentary: string | null
           created_at: string | null
           created_by: string | null
           description: string | null
+          english_translation: string | null
           id: string
           is_daily_verse: boolean | null
           keywords: string[] | null
           language_id: string
+          sanskrit_text: string | null
           status: Database["public"]["Enums"]["verse_status"] | null
           title: string | null
+          transliteration: string | null
           updated_at: string | null
           verse_number: number
           video_file_path: string | null
@@ -123,15 +139,19 @@ export type Database = {
         }
         Insert: {
           chapter_id: string
+          commentary?: string | null
           created_at?: string | null
           created_by?: string | null
           description?: string | null
+          english_translation?: string | null
           id?: string
           is_daily_verse?: boolean | null
           keywords?: string[] | null
           language_id: string
+          sanskrit_text?: string | null
           status?: Database["public"]["Enums"]["verse_status"] | null
           title?: string | null
+          transliteration?: string | null
           updated_at?: string | null
           verse_number: number
           video_file_path?: string | null
@@ -141,15 +161,19 @@ export type Database = {
         }
         Update: {
           chapter_id?: string
+          commentary?: string | null
           created_at?: string | null
           created_by?: string | null
           description?: string | null
+          english_translation?: string | null
           id?: string
           is_daily_verse?: boolean | null
           keywords?: string[] | null
           language_id?: string
+          sanskrit_text?: string | null
           status?: Database["public"]["Enums"]["verse_status"] | null
           title?: string | null
+          transliteration?: string | null
           updated_at?: string | null
           verse_number?: number
           video_file_path?: string | null
