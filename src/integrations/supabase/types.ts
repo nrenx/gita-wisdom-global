@@ -48,6 +48,8 @@ export type Database = {
           created_at: string | null
           id: string
           is_active: boolean | null
+          manual_chapter_count: number | null
+          manual_verse_count: number | null
           name: string
           native_name: string | null
           updated_at: string | null
@@ -57,6 +59,8 @@ export type Database = {
           created_at?: string | null
           id?: string
           is_active?: boolean | null
+          manual_chapter_count?: number | null
+          manual_verse_count?: number | null
           name: string
           native_name?: string | null
           updated_at?: string | null
@@ -66,6 +70,8 @@ export type Database = {
           created_at?: string | null
           id?: string
           is_active?: boolean | null
+          manual_chapter_count?: number | null
+          manual_verse_count?: number | null
           name?: string
           native_name?: string | null
           updated_at?: string | null

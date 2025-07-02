@@ -32,8 +32,8 @@ interface Verse {
   visibility: 'published' | 'hidden' | 'draft';
   is_daily_verse: boolean;
   whatsapp_share_text?: string;
-  chapters?: { title: string; chapter_number: number; sanskrit_title?: string };
-  languages?: { name: string; native_name: string };
+  chapters: { title: string; chapter_number: number; sanskrit_title?: string };
+  languages: { name: string; native_name: string };
 }
 
 interface Chapter {
@@ -79,8 +79,8 @@ const VersesManagement = () => {
           .from('verses')
           .select(`
             *,
-            chapters (title, chapter_number, sanskrit_title, english_title, total_verses, summary),
-            languages (name, native_name)
+            chapters!inner (title, chapter_number, sanskrit_title, english_title, total_verses, summary),
+            languages!inner (name, native_name)
           `)
           .order('created_at', { ascending: false }),
         
@@ -100,7 +100,7 @@ const VersesManagement = () => {
       if (chaptersResult.error) throw chaptersResult.error;
       if (languagesResult.error) throw languagesResult.error;
 
-      setVerses(versesResult.data || []);
+      setVerses((versesResult.data as any) || []);
       setChapters(chaptersResult.data || []);
       setLanguages(languagesResult.data || []);
     } catch (error) {
