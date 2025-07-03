@@ -202,9 +202,9 @@ const VersesManagement = () => {
       verse.english_translation?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       verse.verse_number.toString().includes(searchTerm);
     
-    const matchesChapter = !filterChapter || verse.chapter_id === filterChapter;
-    const matchesLanguage = !filterLanguage || verse.language_id === filterLanguage;
-    const matchesStatus = !filterStatus || verse.status === filterStatus;
+    const matchesChapter = !filterChapter || filterChapter === 'all' || verse.chapter_id === filterChapter;
+    const matchesLanguage = !filterLanguage || filterLanguage === 'all' || verse.language_id === filterLanguage;
+    const matchesStatus = !filterStatus || filterStatus === 'all' || verse.status === filterStatus;
     
     return matchesSearch && matchesChapter && matchesLanguage && matchesStatus;
   });
@@ -485,7 +485,7 @@ const VersesManagement = () => {
               <SelectValue placeholder="Filter by chapter" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">All Chapters</SelectItem>
+              <SelectItem value="all">All Chapters</SelectItem>
               {chapters.map((chapter) => (
                 <SelectItem key={chapter.id} value={chapter.id}>
                   {chapter.chapter_number}. {chapter.title}
@@ -498,7 +498,7 @@ const VersesManagement = () => {
               <SelectValue placeholder="Filter by language" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">All Languages</SelectItem>
+              <SelectItem value="all">All Languages</SelectItem>
               {languages.map((language) => (
                 <SelectItem key={language.id} value={language.id}>
                   {language.name}
@@ -511,7 +511,7 @@ const VersesManagement = () => {
               <SelectValue placeholder="Filter by status" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">All Status</SelectItem>
+              <SelectItem value="all">All Status</SelectItem>
               <SelectItem value="pending">Pending</SelectItem>
               <SelectItem value="uploaded">Uploaded</SelectItem>
               <SelectItem value="processing">Processing</SelectItem>
