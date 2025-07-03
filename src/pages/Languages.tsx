@@ -1,50 +1,89 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Globe, Filter } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+
+interface Language {
+  id: string;
+  name: string;
+  code: string;
+  native_name?: string;
+  is_active: boolean;
+  manual_verse_count?: number;
+  manual_chapter_count?: number;
+}
 
 const Languages = () => {
   const [selectedCategory, setSelectedCategory] = useState("all");
+  const [languages, setLanguages] = useState<Language[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const languages = [
-    // Indian Languages
-    { name: "Hindi", code: "hi", category: "indian", videos: 145, flag: "🇮🇳" },
-    { name: "Telugu", code: "te", category: "indian", videos: 98, flag: "🇮🇳" },
-    { name: "Tamil", code: "ta", category: "indian", videos: 87, flag: "🇮🇳" },
-    { name: "Sanskrit", code: "sa", category: "indian", videos: 156, flag: "🇮🇳" },
-    { name: "Bengali", code: "bn", category: "indian", videos: 76, flag: "🇮🇳" },
-    { name: "Gujarati", code: "gu", category: "indian", videos: 63, flag: "🇮🇳" },
-    { name: "Marathi", code: "mr", category: "indian", videos: 54, flag: "🇮🇳" },
-    { name: "Punjabi", code: "pa", category: "indian", videos: 42, flag: "🇮🇳" },
-    { name: "Kannada", code: "kn", category: "indian", videos: 38, flag: "🇮🇳" },
-    { name: "Malayalam", code: "ml", category: "indian", videos: 35, flag: "🇮🇳" },
-    { name: "Odia", code: "or", category: "indian", videos: 28, flag: "🇮🇳" },
-    { name: "Assamese", code: "as", category: "indian", videos: 24, flag: "🇮🇳" },
-    
-    // International Languages
-    { name: "English", code: "en", category: "international", videos: 189, flag: "🇺🇸" },
-    { name: "Spanish", code: "es", category: "international", videos: 67, flag: "🇪🇸" },
-    { name: "French", code: "fr", category: "international", videos: 45, flag: "🇫🇷" },
-    { name: "German", code: "de", category: "international", videos: 38, flag: "🇩🇪" },
-    { name: "Portuguese", code: "pt", category: "international", videos: 32, flag: "🇧🇷" },
-    { name: "Russian", code: "ru", category: "international", videos: 29, flag: "🇷🇺" },
-    { name: "Japanese", code: "ja", category: "international", videos: 26, flag: "🇯🇵" },
-    { name: "Chinese", code: "zh", category: "international", videos: 24, flag: "🇨🇳" },
-    { name: "Arabic", code: "ar", category: "international", videos: 21, flag: "🇸🇦" },
-    { name: "Italian", code: "it", category: "international", videos: 18, flag: "🇮🇹" },
-  ];
+  useEffect(() => {
+    fetchLanguages();
+  }, []);
+
+  const fetchLanguages = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('languages')
+        .select('*')
+        .eq('is_active', true)
+        .order('name');
+
+      if (error) throw error;
+      setLanguages(data || []);
+    } catch (error) {
+      console.error('Error fetching languages:', error);
+      toast.error('Failed to load languages');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Categorize languages (Indian vs International based on common language codes)
+  const getLanguageCategory = (code: string) => {
+    const indianLanguages = ['hi', 'te', 'ta', 'sa', 'bn', 'gu', 'mr', 'pa', 'kn', 'ml', 'or', 'as'];
+    return indianLanguages.includes(code) ? 'indian' : 'international';
+  };
+
+  const getLanguageFlag = (code: string) => {
+    const flagMap: Record<string, string> = {
+      'hi': '🇮🇳', 'te': '🇮🇳', 'ta': '🇮🇳', 'sa': '🇮🇳', 'bn': '🇮🇳', 'gu': '🇮🇳',
+      'mr': '🇮🇳', 'pa': '🇮🇳', 'kn': '🇮🇳', 'ml': '🇮🇳', 'or': '🇮🇳', 'as': '🇮🇳',
+      'en': '🇺🇸', 'es': '🇪🇸', 'fr': '🇫🇷', 'de': '🇩🇪', 'pt': '🇧🇷', 'ru': '🇷🇺',
+      'ja': '🇯🇵', 'zh': '🇨🇳', 'ar': '🇸🇦', 'it': '🇮🇹'
+    };
+    return flagMap[code] || '🌐';
+  };
+
+  const languagesWithCategory = languages.map(lang => ({
+    ...lang,
+    category: getLanguageCategory(lang.code),
+    flag: getLanguageFlag(lang.code),
+    videos: lang.manual_verse_count || 0
+  }));
 
   const categories = [
-    { id: "all", label: "All Languages", count: languages.length },
-    { id: "indian", label: "Indian Languages", count: languages.filter(l => l.category === "indian").length },
-    { id: "international", label: "International", count: languages.filter(l => l.category === "international").length },
+    { id: "all", label: "All Languages", count: languagesWithCategory.length },
+    { id: "indian", label: "Indian Languages", count: languagesWithCategory.filter(l => l.category === "indian").length },
+    { id: "international", label: "International", count: languagesWithCategory.filter(l => l.category === "international").length },
   ];
 
   const filteredLanguages = selectedCategory === "all" 
-    ? languages 
-    : languages.filter(lang => lang.category === selectedCategory);
+    ? languagesWithCategory 
+    : languagesWithCategory.filter(lang => lang.category === selectedCategory);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-sacred-gold"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen py-12 px-4">
@@ -87,33 +126,46 @@ const Languages = () => {
 
         {/* Languages Grid */}
         <div className="grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-          {filteredLanguages.map((language) => (
-            <Card key={language.code} className="chapter-card lotus-pattern group hover:animate-lotus-bloom cursor-pointer">
-              <CardContent className="p-6 text-center">
-                <div className="text-4xl mb-4">{language.flag}</div>
-                <h3 className="text-lg font-cinzel font-semibold mb-2 text-gray-800">
-                  {language.name}
-                </h3>
-                <div className="flex items-center justify-center space-x-2 mb-4">
-                  <Badge className="language-tag">
-                    {language.videos} videos
-                  </Badge>
-                  <Badge variant="outline" className="text-xs">
-                    {language.category}
-                  </Badge>
-                </div>
-                <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
-                  <div 
-                    className="h-full bg-gradient-to-r from-saffron-500 to-saffron-600 rounded-full transition-all duration-500"
-                    style={{ width: `${Math.min((language.videos / 189) * 100, 100)}%` }}
-                  ></div>
-                </div>
-                <p className="text-xs text-gray-500 mt-2 font-garamond">
-                  {Math.round((language.videos / 700) * 100)}% complete
-                </p>
-              </CardContent>
-            </Card>
-          ))}
+          {filteredLanguages.length > 0 ? (
+            filteredLanguages.map((language) => (
+              <Card key={language.code} className="chapter-card lotus-pattern group hover:animate-lotus-bloom cursor-pointer">
+                <CardContent className="p-6 text-center">
+                  <div className="text-4xl mb-4">{language.flag}</div>
+                  <h3 className="text-lg font-cinzel font-semibold mb-2 text-gray-800">
+                    {language.name}
+                  </h3>
+                  {language.native_name && (
+                    <p className="text-sm text-gray-600 mb-3 font-garamond">
+                      {language.native_name}
+                    </p>
+                  )}
+                  <div className="flex items-center justify-center space-x-2 mb-4">
+                    <Badge className="language-tag">
+                      {language.videos} videos
+                    </Badge>
+                    <Badge variant="outline" className="text-xs">
+                      {language.category}
+                    </Badge>
+                  </div>
+                  <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
+                    <div 
+                      className="h-full bg-gradient-to-r from-saffron-500 to-saffron-600 rounded-full transition-all duration-500"
+                      style={{ width: `${Math.min((language.videos / 700) * 100, 100)}%` }}
+                    ></div>
+                  </div>
+                  <p className="text-xs text-gray-500 mt-2 font-garamond">
+                    {Math.round((language.videos / 700) * 100)}% complete
+                  </p>
+                </CardContent>
+              </Card>
+            ))
+          ) : (
+            <div className="col-span-full text-center py-12">
+              <p className="text-gray-600 font-garamond">
+                No languages found. Please add languages in the admin panel.
+              </p>
+            </div>
+          )}
         </div>
 
         {/* Stats Section */}
@@ -121,13 +173,13 @@ const Languages = () => {
           <div className="grid md:grid-cols-3 gap-8 text-center">
             <div>
               <div className="text-3xl font-cinzel font-bold sacred-text mb-2">
-                {languages.length}+
+                {languagesWithCategory.length}
               </div>
               <p className="text-gray-700 font-garamond">Languages Available</p>
             </div>
             <div>
               <div className="text-3xl font-cinzel font-bold sacred-text mb-2">
-                {languages.reduce((sum, lang) => sum + lang.videos, 0)}+
+                {languagesWithCategory.reduce((sum, lang) => sum + (lang.videos || 0), 0)}
               </div>
               <p className="text-gray-700 font-garamond">Total Video Explanations</p>
             </div>

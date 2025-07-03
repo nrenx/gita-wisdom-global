@@ -248,16 +248,14 @@ const VersesManagement = () => {
               Manage all 700 verses of the Bhagavad Gita with translations and commentary
             </CardDescription>
           </div>
+          <Button
+            onClick={() => window.location.href = '/admin/verse'}
+            className="bg-saffron-600 hover:bg-saffron-700"
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Add Verse
+          </Button>
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <DialogTrigger asChild>
-              <Button
-                onClick={() => window.location.href = '/admin/verse'}
-                className="bg-saffron-600 hover:bg-saffron-700"
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                Add Verse
-              </Button>
-            </DialogTrigger>
             <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle className="font-cinzel text-saffron-800">
