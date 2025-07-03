@@ -73,7 +73,9 @@ const VersesManagement = () => {
   }, []);
 
   const fetchData = async () => {
+    console.log('VersesManagement: Starting fetchData...');
     try {
+      console.log('VersesManagement: Making database calls...');
       const [versesResult, chaptersResult, languagesResult] = await Promise.all([
         supabase
           .from('verses')
@@ -96,8 +98,20 @@ const VersesManagement = () => {
           .order('name')
       ]);
 
-      if (versesResult.error) throw versesResult.error;
-      if (chaptersResult.error) throw chaptersResult.error;
+      console.log('VersesManagement: Database results:', { 
+        verses: versesResult, 
+        chapters: chaptersResult, 
+        languages: languagesResult 
+      });
+
+      if (versesResult.error) {
+        console.error('VersesManagement: Verses error:', versesResult.error);
+        throw versesResult.error;
+      }
+      if (chaptersResult.error) {
+        console.error('VersesManagement: Chapters error:', chaptersResult.error);
+        throw chaptersResult.error;
+      }
       if (languagesResult.error) throw languagesResult.error;
 
       setVerses((versesResult.data as any) || []);
@@ -204,7 +218,16 @@ const VersesManagement = () => {
     return acc;
   }, {} as Record<number, Verse[]>);
 
+  console.log('VersesManagement: Render state:', { 
+    loading, 
+    versesLength: verses.length, 
+    chaptersLength: chapters.length, 
+    languagesLength: languages.length,
+    filteredVersesLength: filteredVerses.length 
+  });
+
   if (loading) {
+    console.log('VersesManagement: Still loading...');
     return (
       <div className="flex items-center justify-center h-64">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-sacred-gold"></div>
